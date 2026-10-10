@@ -1,0 +1,130 @@
+:root {
+    --agent-width: 420px;
+}
+
+/* Panel docked to the right edge, hidden off-screen until opened */
+.agent-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 1030;
+    width: var(--agent-width);
+    height: 100vh;
+    background: var(--card-bg, #fff);
+    border-left: 1px solid var(--border-color, #e5e7eb);
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0.2s;
+}
+
+body.agent-open .agent-panel {
+    transform: translateX(0);
+    visibility: visible;
+}
+
+.agent-panel iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+/* Desk shrinks to make room instead of sliding under the panel.
+   Body padding is forced to 0 by desk, so the main column gets the margin. */
+body.agent-open .main-section {
+    width: auto;
+    flex: 1 1 0;
+    min-width: 0;
+    margin-right: var(--agent-width);
+    transition: margin-right 0.2s ease;
+}
+
+/* Drag handle on the panel's left edge */
+.agent-resizer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -3px;
+    width: 6px;
+    cursor: col-resize;
+    z-index: 1;
+}
+
+.agent-resizer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 2px;
+    width: 2px;
+    background: transparent;
+    transition: background 0.15s;
+}
+
+.agent-resizer:hover::after,
+body.agent-resizing .agent-resizer::after {
+    background: var(--primary, #171717);
+}
+
+/* While dragging: no transitions, no text selection, iframe click-through */
+body.agent-resizing {
+    cursor: col-resize;
+    user-select: none;
+}
+
+body.agent-resizing .agent-panel,
+body.agent-resizing .main-section {
+    transition: none;
+}
+
+body.agent-resizing .agent-panel iframe {
+    pointer-events: none;
+}
+
+/* Floating launcher, shown only while the panel is closed */
+.agent-launcher {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1030;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px 0 12px;
+    border: 0;
+    border-radius: 999px;
+    background: #171717;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.agent-launcher:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+}
+
+.agent-launcher svg {
+    width: 16px;
+    height: 16px;
+}
+
+body.agent-open .agent-launcher {
+    display: none;
+}
+
+/* Too narrow to share the screen: overlay instead of squeezing desk */
+@media (max-width: 900px) {
+    body.agent-open .main-section {
+        margin-right: 0;
+    }
+
+    .agent-panel {
+        width: min(var(--agent-width), 100vw);
+        box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+    }
+}

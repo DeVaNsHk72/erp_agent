@@ -5,6 +5,8 @@ app_description = "A agent for ERPNext"
 app_email = "devanshkhetan9@gmail.com"
 app_license = "mit"
 
+app_include_js = "agent_panel.bundle.js"
+app_include_css = "agent_panel.bundle.css"
 # Apps
 # ------------------
 website_route_rules = [
