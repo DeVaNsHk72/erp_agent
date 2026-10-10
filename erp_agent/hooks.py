@@ -7,7 +7,9 @@ app_license = "mit"
 
 # Apps
 # ------------------
-
+website_route_rules = [
+    {"from_route": "/agent/<path:app_path>", "to_route": "agent"},
+]
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page

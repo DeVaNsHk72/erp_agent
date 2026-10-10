@@ -53,3 +53,7 @@ jspm_packages/
 
 # Aider AI Chat
 .aider*
+
+# Frontend build output, produced by `bench build` (runs `yarn build` in frontend/)
+erp_agent/public/frontend/
+erp_agent/www/agent.html
