@@ -352,9 +352,14 @@ def run(areas=None, pause=PAUSE_SECONDS):
                 history=extra["history"]() if "history" in extra else None,
                 context=extra["context"]() if "context" in extra else None,
             )
+        except Exception as e:  # one broken case must not end the whole run
+            result = {"answer": f"ERROR {type(e).__name__}: {e}", "steps": [], "charts": [], "actions": []}
         finally:
             frappe.set_user("Administrator")
         seconds = time.time() - start
+        if "daily usage limit" in (result.get("answer") or ""):
+            print(f"STOPPED at case {i + 1}/{len(cases)}: {result['answer']}", flush=True)
+            break
         problems = grade(result.get("answer"), truth, result)
         usage = result.get("usage", {})
         results.append({
