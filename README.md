@@ -9,6 +9,9 @@ and answers with text, tables and charts.
 - **Permission-aware tools**: `get_list` runs as the logged-in user, so answers only use data they can see
 - **Read-only SQL** for joins across DocTypes, limited to System Managers (see below)
 - **Saved chats** per user, with follow-up questions and page context ("this invoice")
+- **Drafts with confirmation**: "create a sales order for Vistara Traders, 20 laptops" shows a preview card
+  (validated and priced by ERPNext); nothing is saved until you click Create draft, and never submitted
+- **Daily digest** at 08:00 for System Managers: sales, overdue invoices, low stock, late orders
 - **Any OpenAI-compatible model**: Groq, OpenAI, Gemini, Ollama and others
 
 ### Installation
@@ -37,6 +40,16 @@ bench build --app erp_agent
    ```
 
    Re-run it after installing apps that add tables.
+3. The daily digest is on by default (Agents Settings → *Send a daily digest*). Send one now with
+   `bench --site $SITE execute erp_agent.digest.send_daily_digest`.
+
+### Permissions
+
+The agent never sees more than the person asking. `get_list`, `describe_doctype` and `find_doctypes`
+run as the logged-in user, so ERPNext roles and User Permissions apply (a Sales User limited to one
+territory only gets that territory's numbers). Drafts are created as that user too. Raw SQL is only
+offered to System Managers. `/agent` is limited to desk (System) users, and chats are private to
+their owner.
 
 ### How it works
 
@@ -45,16 +58,18 @@ bench build --app erp_agent
 | `erp_agent/agent.py` | Tool-calling loop: ask the model, run the tools it requests, repeat until it answers |
 | `erp_agent/tools.py` | `find_doctypes`, `describe_doctype`, `get_list`, `render_chart` and their schemas |
 | `erp_agent/data_map.py` | Compact map of common DocTypes and fields, checked against live metadata, so most questions need one query |
+| `erp_agent/actions.py` | Draft documents: validate and price in a rolled-back savepoint, create only on confirm |
+| `erp_agent/digest.py` | The daily digest, built from SQL |
 | `erp_agent/sql_tool.py` | Read-only SQL: role check, query validation, SELECT-only database user, time and row limits |
 | `erp_agent/llm.py` | OpenAI-compatible client with streaming |
-| `erp_agent/api.py` | Whitelisted endpoints: `ask`, `list_chats`, `get_chat`, `delete_chat` |
+| `erp_agent/api.py` | Whitelisted endpoints: `ask`, `list_chats`, `get_chat`, `delete_chat`, `confirm_action`, `cancel_action` |
 | `erp_agent/public/js/agent_panel.bundle.js` | The desk side panel |
 | `frontend/` | The chat app served at `/agent` |
 
 ### Benchmark
 
-`erp_agent/eval.py` asks 23 questions (sales, receivables, stock, HR, follow-ups, page context, an
-unknown customer) and grades the answers against values computed live from the database:
+`erp_agent/eval.py` asks 28 questions (sales, receivables, stock, HR, follow-ups, page context, an
+unknown customer, drafting documents, and questions as a territory-restricted user) and grades the answers against values computed live from the database:
 
 ```bash
 bench --site $SITE execute erp_agent.eval.run
