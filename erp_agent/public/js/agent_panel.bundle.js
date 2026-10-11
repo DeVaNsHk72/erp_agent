@@ -116,12 +116,34 @@ function sendContext() {
 	);
 }
 
-frappe.router.on("change", sendContext);
+// Agent Chats (e.g. the daily digest notification) open in the panel, not as a raw form
+let pendingChat = null;
+
+function openChatInPanel(chat) {
+	pendingChat = chat;
+	setOpen(true);
+	iframe.contentWindow?.postMessage({ type: "erp-agent-open-chat", chat }, window.location.origin);
+}
+
+frappe.router.on("change", () => {
+	const route = frappe.get_route() || [];
+	if (route[0] === "Form" && route[1] === "Agent Chat" && route[2]) {
+		window.history.back();
+		openChatInPanel(route[2]);
+		return;
+	}
+	sendContext();
+});
 
 // Messages from the chat: it announces itself when loaded, and asks to close
 window.addEventListener("message", (event) => {
 	if (event.origin !== window.location.origin) return;
-	if (event.data?.type === "erp-agent-ready") sendContext();
+	if (event.data?.type === "erp-agent-ready") {
+		sendContext();
+		// The chat was still loading when a digest link was clicked
+		if (pendingChat) iframe.contentWindow?.postMessage({ type: "erp-agent-open-chat", chat: pendingChat }, window.location.origin);
+	}
+	if (event.data?.type === "erp-agent-chat-opened") pendingChat = null;
 	if (event.data?.type === "erp-agent-close") setOpen(false);
 	if (event.data?.type === "erp-agent-open-doc" && event.data.doctype && event.data.name) {
 		frappe.set_route("Form", event.data.doctype, event.data.name);

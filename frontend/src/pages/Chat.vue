@@ -214,6 +214,10 @@ function onParentMessage(event: MessageEvent) {
   if (event.origin !== window.location.origin) return
   if (event.data?.type === 'erp-agent-context') context.value = event.data.context
   if (event.data?.type === 'erp-agent-focus') inputEl.value?.focus()
+  if (event.data?.type === 'erp-agent-open-chat' && event.data.chat) {
+    window.parent.postMessage({ type: 'erp-agent-chat-opened' }, window.location.origin)
+    if (event.data.chat !== chatId.value && !busy.value) openChat(event.data.chat)
+  }
 }
 
 // Show a document the agent created: in desk when docked, in a new tab when standalone
