@@ -15,7 +15,11 @@ def describe_doctype(doctype):
     :param doctype: The name of the doctype to describe.
     :return: A dictionary containing the doctype's metadata.
     """
-    fields = frappe.get_meta(doctype).fields
+    meta = frappe.get_meta(doctype)
+    # Child tables have no permissions of their own; their rows are only reachable through the parent
+    if not meta.istable and not frappe.has_permission(doctype, "read"):
+        raise frappe.PermissionError(f"No permission to read {doctype}")
+    fields = meta.fields
     # One compact line per field ("fieldname: Type -> options (Label)") instead of a dict:
     # repeating dict keys for ~150 fields costs thousands of tokens per call.
     described = []
@@ -65,13 +69,15 @@ def find_doctypes(search):
     :param search: The search term to match against doctype names.
     :return: A list of matching doctypes.
     """
-    return frappe.get_all(
+    names = frappe.get_all(
         "DocType",
         filters={"name": ["like", f"%{search}%"], "istable": 0},
         pluck="name",
         order_by="name asc",
-        limit=15,
+        limit=40,
     )
+    # Only offer DocTypes this user can actually read
+    return [name for name in names if frappe.has_permission(name, "read")][:15]
 
 CHART_TYPES = {"bar", "line", "donut"}
 
