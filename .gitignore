@@ -57,3 +57,6 @@ jspm_packages/
 # Frontend build output, produced by `bench build` (runs `yarn build` in frontend/)
 erp_agent/public/frontend/
 erp_agent/www/agent.html
+
+# bench build links public/node_modules to the app root; it is a symlink, not a directory
+node_modules

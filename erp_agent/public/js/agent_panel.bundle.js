@@ -123,6 +123,9 @@ window.addEventListener("message", (event) => {
 	if (event.origin !== window.location.origin) return;
 	if (event.data?.type === "erp-agent-ready") sendContext();
 	if (event.data?.type === "erp-agent-close") setOpen(false);
+	if (event.data?.type === "erp-agent-open-doc" && event.data.doctype && event.data.name) {
+		frappe.set_route("Form", event.data.doctype, event.data.name);
+	}
 });
 
 const saved = loadState();

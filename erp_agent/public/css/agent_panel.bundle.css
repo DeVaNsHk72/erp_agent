@@ -1,5 +1,7 @@
 :root {
     --agent-width: 420px;
+    /* Never take more than 45% of the screen, however wide the panel was dragged */
+    --agent-panel-width: min(var(--agent-width), 45vw);
 }
 
 /* Panel docked to the right edge, hidden off-screen until opened */
@@ -8,7 +10,7 @@
     top: 0;
     right: 0;
     z-index: 1030;
-    width: var(--agent-width);
+    width: var(--agent-panel-width);
     height: 100vh;
     background: var(--card-bg, #fff);
     border-left: 1px solid var(--border-color, #e5e7eb);
@@ -35,7 +37,7 @@ body.agent-open .main-section {
     width: auto;
     flex: 1 1 0;
     min-width: 0;
-    margin-right: var(--agent-width);
+    margin-right: var(--agent-panel-width);
     transition: margin-right 0.2s ease;
 }
 
@@ -117,8 +119,8 @@ body.agent-open .agent-launcher {
     display: none;
 }
 
-/* Too narrow to share the screen: overlay instead of squeezing desk */
-@media (max-width: 900px) {
+/* Too narrow to share the screen (desk's own sidebars take ~280px): overlay instead of squeezing */
+@media (max-width: 1200px) {
     body.agent-open .main-section {
         margin-right: 0;
     }

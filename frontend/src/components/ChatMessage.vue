@@ -51,6 +51,7 @@
     <template v-else>
       <div class="answer prose prose-sm max-w-none text-ink-gray-8" v-html="html" />
       <ChartView v-for="(chart, i) in message.charts" :key="i" :chart="chart" />
+      <ActionCard v-for="action in message.actions || []" :key="action.id" :action="action" :chat="chat" @open="emit('open', $event)" />
       <div class="opacity-0 transition-opacity group-hover:opacity-100">
         <button
           class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-ink-gray-5 hover:bg-surface-gray-2 hover:text-ink-gray-7"
@@ -72,6 +73,7 @@ import LucideCheck from '~icons/lucide/check'
 import LucideChevronRight from '~icons/lucide/chevron-right'
 import LucideCircleAlert from '~icons/lucide/circle-alert'
 import LucideCopy from '~icons/lucide/copy'
+import ActionCard, { type ActionSpec } from './ActionCard.vue'
 import ChartView, { type ChartSpec } from './ChartView.vue'
 import { renderMarkdown } from '@/lib/markdown'
 
@@ -87,9 +89,11 @@ export interface Message {
   runId?: string
   steps: Step[]
   charts: ChartSpec[]
+  actions?: ActionSpec[]
 }
 
-const props = defineProps<{ message: Message }>()
+const props = defineProps<{ message: Message; chat: string | null }>()
+const emit = defineEmits<{ open: [doc: { doctype: string; name: string }] }>()
 const showSteps = ref(false)
 const copied = ref(false)
 const html = computed(() => renderMarkdown(props.message.content))

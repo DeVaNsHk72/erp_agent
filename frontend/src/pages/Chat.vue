@@ -65,7 +65,7 @@
       </div>
 
       <div v-else class="space-y-6 px-4 py-5">
-        <ChatMessage v-for="(m, i) in messages" :key="i" :message="m" />
+        <ChatMessage v-for="(m, i) in messages" :key="i" :message="m" :chat="chatId" @open="openDoc" />
       </div>
     </main>
 
@@ -175,6 +175,7 @@ async function send(text: string) {
     })
     reply.content = result.answer || 'No answer.'
     reply.charts = result.charts || []
+    reply.actions = result.actions || []
     // The server's list is authoritative, in case a live event was missed
     reply.steps = (result.steps || []).map((s: any) => ({ label: s.label, status: s.ok ? 'done' : 'error' }))
     reply.status = 'done'
@@ -213,6 +214,16 @@ function onParentMessage(event: MessageEvent) {
   if (event.origin !== window.location.origin) return
   if (event.data?.type === 'erp-agent-context') context.value = event.data.context
   if (event.data?.type === 'erp-agent-focus') inputEl.value?.focus()
+}
+
+// Show a document the agent created: in desk when docked, in a new tab when standalone
+function openDoc(doc: { doctype: string; name: string }) {
+  if (embedded) {
+    window.parent.postMessage({ type: 'erp-agent-open-doc', ...doc }, window.location.origin)
+  } else {
+    const slug = doc.doctype.toLowerCase().replace(/ /g, '-')
+    window.open(`/app/${slug}/${encodeURIComponent(doc.name)}`, '_blank')
+  }
 }
 
 function close() {
@@ -266,6 +277,7 @@ async function openChat(name: string) {
       status: m.role === 'assistant' ? 'done' : undefined,
       steps: (m.steps || []).map((s: any) => ({ label: s.label, status: s.ok ? 'done' : 'error' })),
       charts: m.charts || [],
+      actions: m.actions || [],
     }))
     setChatId(name)
   } catch (e) {
