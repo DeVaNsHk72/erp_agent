@@ -2,6 +2,7 @@ import json
 
 import frappe
 
+from erp_agent import actions
 from erp_agent.agent import run_agent
 
 CHAT_LIST_LIMIT = 50
@@ -33,6 +34,7 @@ def ask(question, chat=None, context=None, run_id=None):
         "content": result["answer"],
         "steps": [{"label": s["label"], "ok": s["ok"]} for s in result["steps"]],
         "charts": result["charts"],
+        "actions": result["actions"],
     })
     doc.title = doc.title or question[:TITLE_LENGTH]
     doc.messages = json.dumps(messages, default=str)
@@ -62,6 +64,36 @@ def get_chat(chat):
 def delete_chat(chat):
     get_own_chat(chat)
     frappe.delete_doc("Agent Chat", chat)
+
+
+@frappe.whitelist(methods=["POST"])
+def confirm_action(action_id, chat=None):
+    """The user clicked Confirm: create the drafted document (as a draft, never submitted)."""
+    created = actions.confirm_action(action_id)
+    if chat:
+        set_action_status(chat, action_id, "created", created)
+    return created
+
+
+@frappe.whitelist(methods=["POST"])
+def cancel_action(action_id, chat=None):
+    actions.cancel_action(action_id)
+    if chat:
+        set_action_status(chat, action_id, "cancelled")
+
+
+def set_action_status(chat, action_id, status, created=None):
+    """Record the outcome on the saved chat, so reopening it shows created / cancelled."""
+    doc = get_own_chat(chat)
+    messages = load_messages(doc)
+    for message in messages:
+        for action in message.get("actions") or []:
+            if action["id"] == action_id:
+                action["status"] = status
+                if created:
+                    action["created"] = created
+    doc.messages = json.dumps(messages, default=str)
+    doc.save()
 
 
 def get_own_chat(chat):

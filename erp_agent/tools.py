@@ -1,6 +1,6 @@
 import frappe
 
-from erp_agent import sql_tool
+from erp_agent import actions, sql_tool
 
 # Field types that only shape the form layout and hold no data
 LAYOUT_FIELDTYPES = {"Section Break", "Column Break", "Tab Break", "HTML", "Button", "Fold", "Heading"}
@@ -242,9 +242,10 @@ TOOL_SCHEMAS = [
 
 def get_tool_schemas():
     """Tools for the current user: run_sql only for users allowed to bypass per-document permissions."""
+    schemas = [*TOOL_SCHEMAS, actions.DRAFT_DOCUMENT_SCHEMA]
     if sql_tool.can_use_sql() and sql_tool.is_configured():
-        return [*TOOL_SCHEMAS, sql_tool.RUN_SQL_SCHEMA]
-    return TOOL_SCHEMAS
+        schemas.append(sql_tool.RUN_SQL_SCHEMA)
+    return schemas
 
 
 def run_tool(name, args):
@@ -261,6 +262,7 @@ def run_tool(name, args):
         "get_list": get_list,
         "render_chart": render_chart,
         "run_sql": sql_tool.run_sql,
+        "draft_document": actions.draft_document,
     }
     if name not in tools:
         raise ValueError(f"Tool '{name}' not found.")

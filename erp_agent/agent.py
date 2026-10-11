@@ -49,10 +49,11 @@ def run_agent(question, history=None, context=None, run_id=None):
 
     steps = []  # record of tools used, for debugging and the UI
     charts = []
+    proposals = []  # documents drafted by the model, waiting for the user's Confirm / Cancel
     usage = {"llm_calls": 0, "prompt_tokens": 0, "completion_tokens": 0}
 
     def finish(answer):
-        return {"answer": answer, "steps": steps, "charts": charts, "usage": usage}
+        return {"answer": answer, "steps": steps, "charts": charts, "actions": proposals, "usage": usage}
 
     streamer = TextStreamer(run_id) if run_id else None
     tool_schemas = get_tool_schemas()
@@ -106,6 +107,8 @@ def run_agent(question, history=None, context=None, run_id=None):
 
             if ok and tc.function.name == "render_chart":
                 charts.append(args)
+            if ok and tc.function.name == "draft_document":
+                proposals.append({"id": result["action_id"], "preview": result["preview"], "status": "pending"})
 
             content = json.dumps(result, default=str)
             if len(content) > MAX_RESULT_CHARS:
@@ -126,6 +129,8 @@ def step_label(tool, args):
         return f"Reading the {args.get('doctype', '')} fields"
     if tool == "get_list":
         return f"Querying {args.get('doctype', '')}"
+    if tool == "draft_document":
+        return f"Preparing a draft {args.get('doctype', 'document')}"
     if tool == "run_sql":
         return "Running a database query"
     if tool == "render_chart":
@@ -157,6 +162,9 @@ Rules:
 - Keep answers short. Use Markdown; use a table for lists of more than 3 rows.
 - Write money as ₹ followed by the exact number from the data with no commas, e.g. ₹34423819.35.
   The app adds Indian digit grouping itself; never group digits or convert to lakh/crore yourself.
+- To create something (sales order, quotation, purchase order, material request, to-do), call
+  draft_document, and only when the user asks. It is NOT created until the user clicks Create draft on
+  the card shown under your answer; never say it was created. Briefly summarise what you drafted.
 - When a trend or comparison would help, call the render_chart tool with the rows you fetched.
   Never write chart JSON, code blocks or HTML into the answer; the tool draws the chart.
 
