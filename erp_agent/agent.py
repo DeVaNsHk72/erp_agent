@@ -3,6 +3,7 @@ import time
 
 import frappe
 import openai
+from erpnext.accounts.utils import get_fiscal_year
 
 from erp_agent.data_map import get_data_map
 from erp_agent.llm import complete, stream_complete
@@ -65,11 +66,10 @@ def run_agent(question, history=None, context=None, run_id=None):
                 streamer.flush()
             else:
                 msg, call_usage = complete(messages, tool_schemas)
-        except openai.RateLimitError:
-            return finish(
-                "The AI provider's rate limit was reached (too many tokens this minute). "
-                "Wait a minute and ask again, or use a plan with a higher limit."
-            )
+        except openai.RateLimitError as e:
+            return finish(rate_limit_message(e))
+        except (openai.APIConnectionError, openai.APITimeoutError):
+            return finish("I couldn't reach the AI provider (network problem). Please try again in a moment.")
         usage["llm_calls"] += 1
         if call_usage:
             usage["prompt_tokens"] += call_usage.prompt_tokens or 0
@@ -121,6 +121,20 @@ def run_agent(question, history=None, context=None, run_id=None):
     return finish("I couldn't finish within the step limit. Try a more specific question.")
 
 
+def rate_limit_message(error):
+    """Say which limit was hit and when it frees up; a daily cap is not fixed by waiting a minute."""
+    wait = ""
+    try:
+        seconds = int(float(error.response.headers.get("retry-after", 0)))
+        if seconds:
+            wait = f" It frees up in about {max(1, round(seconds / 60))} min."
+    except (AttributeError, TypeError, ValueError):
+        pass
+    if "per day" in str(error):
+        return "The AI provider's daily usage limit has been reached." + (wait or " Try again later.")
+    return "The AI provider's per-minute limit was reached." + (wait or " Wait a minute and ask again.")
+
+
 def step_label(tool, args):
     """Plain-language description of a tool call, shown in the chat while the agent works."""
     if tool == "find_doctypes":
@@ -148,9 +162,23 @@ def publish_step(run_id, tool, args, status):
     )
 
 
+def fiscal_year_note():
+    """Spell out the fiscal years: told only "April to March", the model picks the wrong year."""
+    company = frappe.defaults.get_global_default("company")
+    try:
+        name, start, end = get_fiscal_year(frappe.utils.today(), company=company)
+        prev_name, prev_start, prev_end = get_fiscal_year(frappe.utils.add_days(start, -1), company=company)
+    except Exception:
+        return "The fiscal year runs April to March."
+    return (
+        f"This fiscal year is {name} ({start} to {end}); the previous one is {prev_name} "
+        f"({prev_start} to {prev_end}). 'This year' means this fiscal year unless the user says calendar year."
+    )
+
+
 def system_prompt(context=None):
     prompt = f"""You are a data analyst for the company {frappe.defaults.get_global_default("company")}, inside ERPNext.
-Today is {frappe.utils.today()}. Currency is INR. The fiscal year runs April to March.
+Today is {frappe.utils.today()}. Currency is INR. {fiscal_year_note()}
 Rules:
 - Answer only from data you fetched with tools. Never invent numbers.
 - The data map below lists the main DocTypes and their real field names. For anything it covers,

@@ -53,7 +53,8 @@ HINTS = """\
 - Overdue receivables: Sales Invoice outstanding_amount > 0 and due_date < today, docstatus=1.
 - Units sold per item: query Sales Invoice with `tabSales Invoice Item`.item_name / .qty (see get_list).
 - Sales person performance: Sales Invoice with `tabSales Team`.sales_person / .allocated_amount.
-- Stock on hand: Bin.actual_qty (per item and warehouse). Below reorder level: compare with Item reorder_levels.
+- Stock on hand: Bin.actual_qty (per item and warehouse). Bin and Stock Ledger Entry only store item_code
+  (e.g. LAP-001): if the user names an item, first get its item_code from Item by item_name (like). Below reorder level: compare with Item reorder_levels.
 - Expenses / P&L: first get_list Account names with root_type 'Expense' (or 'Income'), then SUM
   GL Entry debit (or credit) with account in that list, is_cancelled=0."""
 
