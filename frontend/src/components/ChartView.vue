@@ -1,5 +1,6 @@
 <template>
-  <div class="h-64 w-full rounded-lg border border-outline-gray-1 bg-surface-white p-2">
+  <!-- No fixed height: frappe-ui charts need at least 300px and size themselves -->
+  <div class="w-full overflow-hidden rounded-lg border border-outline-gray-1 bg-surface-white">
     <DonutChart v-if="chart.chart_type === 'donut'" :config="donutConfig" />
     <AxisChart v-else :config="axisConfig" />
   </div>
@@ -25,11 +26,13 @@ function humanize(key: string) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-// The model sometimes sends numbers as strings; charts need real numbers.
+// frappe-ui reads each value as row[series.name], so the value keys are renamed to the labels
+// shown in the legend and tooltip ("total_sales" -> "Total sales"). The model sometimes sends
+// numbers as strings; charts need real numbers.
 const rows = computed(() =>
   props.chart.data.map((row) => {
-    const clean: Record<string, any> = { ...row, [props.chart.x]: String(row[props.chart.x]) }
-    for (const key of props.chart.y) clean[key] = Number(row[key]) || 0
+    const clean: Record<string, any> = { [props.chart.x]: String(row[props.chart.x]) }
+    for (const key of props.chart.y) clean[humanize(key)] = Number(row[key]) || 0
     return clean
   }),
 )
@@ -38,7 +41,7 @@ const donutConfig = computed(() => ({
   title: props.chart.title,
   data: rows.value,
   categoryColumn: props.chart.x,
-  valueColumn: props.chart.y[0],
+  valueColumn: humanize(props.chart.y[0]),
 }))
 
 const axisConfig = computed(() => ({
