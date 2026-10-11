@@ -7,7 +7,8 @@
  "field_order": [
   "base_url",
   "model",
-  "api_key"
+  "api_key",
+  "daily_digest"
  ],
  "fields": [
   {
@@ -24,13 +25,20 @@
    "fieldname": "api_key",
    "fieldtype": "Password",
    "label": "api_key"
+  },
+  {
+   "default": "1",
+   "description": "Every morning at 8:00: sales, overdue invoices, low stock and late orders, saved as a chat in the ERP Agent panel.",
+   "fieldname": "daily_digest",
+   "fieldtype": "Check",
+   "label": "Send a daily digest to System Managers"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-09 22:52:40.478253",
+ "modified": "2026-10-11 15:06:49.046636",
  "modified_by": "Administrator",
  "module": "Erp Agent",
  "name": "Agents Settings",

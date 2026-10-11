@@ -9,6 +9,11 @@ app_include_js = "agent_panel.bundle.js"
 app_include_css = "agent_panel.bundle.css"
 # Apps
 # ------------------
+# Daily digest at 08:00, saved as a chat for each System Manager
+scheduler_events = {
+    "cron": {"0 8 * * *": ["erp_agent.digest.send_daily_digest"]},
+}
+
 website_route_rules = [
     {"from_route": "/agent/<path:app_path>", "to_route": "agent"},
 ]
